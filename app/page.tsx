@@ -49,6 +49,7 @@ const translationDict: Record<Language, Record<string, string>> = {
     "label.fgColor": "Foreground Color",
     "label.bgColor": "Background Color",
     "label.size": "QR Code Size",
+    "label.margin": "QR Code Margin",
     "label.logo": "Logo Overlay",
     "btn.uploadLogo": "Upload Custom Logo",
     "btn.removeLogo": "Remove Logo",
@@ -68,6 +69,8 @@ const translationDict: Record<Language, Record<string, string>> = {
     "footer.contact": "Contact Us",
     "toast.copied": "QR Code image copied to clipboard!",
     "toast.copyFailed": "Failed to copy QR Code image.",
+    "margin.module": "module",
+    "margin.modules": "modules",
   },
   km: {
     "hero.badge": "ម៉ាស៊ីនបង្កើតកូដ QR",
@@ -97,6 +100,7 @@ const translationDict: Record<Language, Record<string, string>> = {
     "label.fgColor": "ពណ៌ខាងមុខ",
     "label.bgColor": "ពណ៌ផ្ទៃខាងក្រោយ",
     "label.size": "ទំហំកូដ QR",
+    "label.margin": "គែមកូដ QR",
     "label.logo": "រូបសញ្ញាជំនួស",
     "btn.uploadLogo": "បញ្ចូលរូបសញ្ញាផ្ទាល់ខ្លួន",
     "btn.removeLogo": "លុបរូបសញ្ញា",
@@ -116,34 +120,36 @@ const translationDict: Record<Language, Record<string, string>> = {
     "footer.contact": "ទាក់ទងមកយើងខ្ញុំ",
     "toast.copied": "រូបភាពកូដ QR ត្រូវបានចម្លងទៅកាន់ Clipboard!",
     "toast.copyFailed": "មិនអាចចម្លងរូបភាពកូដ QR បានទេ។",
-  }
+    "margin.module": "ម៉ូឌុល",
+    "margin.modules": "ម៉ូឌុល",
+  },
 };
 
 const fgColorPresets = [
-  "#000000", // Classic Black
-  "#4f46e5", // Indigo
-  "#06b6d4", // Cyan
-  "#2563eb", // Blue
-  "#db2777", // Pink
-  "#7c3aed", // Violet
-  "#16a34a", // Green
-  "#ea580c", // Orange
+  "#000000",
+  "#4f46e5",
+  "#06b6d4",
+  "#2563eb",
+  "#db2777",
+  "#7c3aed",
+  "#16a34a",
+  "#ea580c",
 ];
 
 const bgColorPresets = [
-  "#ffffff", // White
-  "#f3f4f6", // Cool Gray
-  "#fef2f2", // Red Tint
-  "#f0fdf4", // Green Tint
-  "#eff6ff", // Blue Tint
-  "#faf5ff", // Purple Tint
+  "#ffffff",
+  "#f3f4f6",
+  "#fef2f2",
+  "#f0fdf4",
+  "#eff6ff",
+  "#faf5ff",
 ];
 
 export default function Home() {
   const [lang, setLang] = useState<Language>("en");
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [activeTab, setActiveTab] = useState<"text" | "link" | "wifi" | "email">("link");
-  
+
   // Input states
   const [textContent, setTextContent] = useState("");
   const [linkUrl, setLinkUrl] = useState("");
@@ -159,6 +165,7 @@ export default function Home() {
   const [fgColor, setFgColor] = useState("#000000");
   const [bgColor, setBgColor] = useState("#ffffff");
   const [qrSize, setQrSize] = useState(350);
+  const [qrMargin, setQrMargin] = useState(2); // NEW: margin state (0–10 modules)
   const [selectedLogo, setSelectedLogo] = useState<"none" | "link" | "wifi" | "email" | "text" | "custom">("none");
   const [customLogoUrl, setCustomLogoUrl] = useState<string | null>(null);
 
@@ -171,12 +178,10 @@ export default function Home() {
 
   const t = (key: string) => translationDict[lang][key] || key;
 
-  // Sync dark mode state with document element
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
     const systemPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
     const isDark = savedTheme === "dark" || (!savedTheme && systemPrefersDark);
-    
     setIsDarkMode(isDark);
     if (isDark) {
       document.documentElement.classList.add("dark");
@@ -197,7 +202,6 @@ export default function Home() {
     }
   };
 
-  // Helper to generate the text data string for the QR code
   const getQRDataString = () => {
     switch (activeTab) {
       case "text":
@@ -205,11 +209,9 @@ export default function Home() {
       case "link":
         return linkUrl || "https://example.com";
       case "wifi":
-        // WIFI:S:SSID;T:WPA;P:PASSWORD;H:true;;
         const security = wifiSecurity === "None" ? "nopass" : wifiSecurity;
         return `WIFI:S:${wifiSsid || "SSID"};T:${security};P:${wifiPassword || ""};H:${wifiHidden ? "true" : "false"};;`;
       case "email":
-        // mailto:hello@example.com?subject=Hello&body=Body
         const subjectEncoded = encodeURIComponent(emailSubject);
         const bodyEncoded = encodeURIComponent(emailBody);
         return `mailto:${emailTo || "hello@example.com"}?subject=${subjectEncoded}&body=${bodyEncoded}`;
@@ -218,7 +220,6 @@ export default function Home() {
     }
   };
 
-  // Preset logo base64 generators (simplified mock icons for render overlays)
   const getPresetLogoSVG = (type: "link" | "wifi" | "email" | "text") => {
     let svgPath = "";
     if (type === "link") {
@@ -230,30 +231,24 @@ export default function Home() {
     } else if (type === "text") {
       svgPath = `<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="#7c3aed" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`;
     }
-    
     const fullSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">${svgPath}</svg>`;
     return "data:image/svg+xml;utf8," + encodeURIComponent(fullSvg);
   };
 
-  // Core QR code drawing operation
   const renderQRCode = async () => {
     if (!canvasRef.current) return;
-    
     const qrData = getQRDataString();
-    
     try {
-      // 1. Render the base QR code to canvas
       await QRCode.toCanvas(canvasRef.current, qrData, {
         width: qrSize,
-        margin: 2,
+        margin: qrMargin, // ← uses qrMargin state
         color: {
           dark: fgColor,
           light: bgColor,
         },
-        errorCorrectionLevel: "H", // Highest correction allows logos
+        errorCorrectionLevel: "H",
       });
 
-      // 2. Overlay Logo if selected
       let logoSrc: string | null = null;
       if (selectedLogo === "custom" && customLogoUrl) {
         logoSrc = customLogoUrl;
@@ -272,18 +267,15 @@ export default function Home() {
             const x = (canvas.width - logoSize) / 2;
             const y = (canvas.height - logoSize) / 2;
 
-            // Draw clean background pill/circle behind logo
             ctx.fillStyle = bgColor;
             ctx.beginPath();
             ctx.arc(canvas.width / 2, canvas.height / 2, logoSize / 2 + 5, 0, Math.PI * 2);
             ctx.fill();
 
-            // Draw border outline
             ctx.strokeStyle = fgColor;
             ctx.lineWidth = 2;
             ctx.stroke();
 
-            // Draw rounded logo inside
             ctx.save();
             ctx.beginPath();
             ctx.arc(canvas.width / 2, canvas.height / 2, logoSize / 2, 0, Math.PI * 2);
@@ -304,7 +296,6 @@ export default function Home() {
     setIsMounted(true);
   }, []);
 
-  // Re-render QR code whenever properties change (after canvas is mounted)
   useEffect(() => {
     if (!isMounted) return;
     renderQRCode();
@@ -322,6 +313,7 @@ export default function Home() {
     fgColor,
     bgColor,
     qrSize,
+    qrMargin, // ← added to dep array
     selectedLogo,
     customLogoUrl,
     activeTab,
@@ -349,7 +341,6 @@ export default function Home() {
     }
   };
 
-  // Download QR Code as PNG
   const downloadPng = () => {
     if (!canvasRef.current) return;
     const url = canvasRef.current.toDataURL("image/png");
@@ -360,76 +351,72 @@ export default function Home() {
     showToast("PNG Downloaded!");
   };
 
-  // Download QR Code as SVG
   const downloadSvg = () => {
     const qrData = getQRDataString();
-    
-    // We can use the library's toString function with type 'svg' to get the actual path data,
-    // then custom overlay the logo inside the SVG markup for high-resolution vector scaling!
-    QRCode.toString(qrData, {
-      type: "svg",
-      width: qrSize,
-      margin: 2,
-      color: {
-        dark: fgColor,
-        light: bgColor,
+    QRCode.toString(
+      qrData,
+      {
+        type: "svg",
+        width: qrSize,
+        margin: qrMargin, // ← uses qrMargin state
+        color: {
+          dark: fgColor,
+          light: bgColor,
+        },
+        errorCorrectionLevel: "H",
       },
-      errorCorrectionLevel: "H",
-    }, (err, svgString) => {
-      if (err) {
-        showToast("Failed to generate SVG", "error");
-        return;
-      }
-      
-      let finalSvg = svgString;
-
-      // Add logo dynamically to SVG if selected
-      if (selectedLogo !== "none") {
-        let logoData = "";
-        const logoSize = qrSize * 0.22;
-        const logoPos = (qrSize - logoSize) / 2;
-
-        if (selectedLogo === "custom" && customLogoUrl) {
-          logoData = `<image href="${customLogoUrl}" x="${logoPos}" y="${logoPos}" width="${logoSize}" height="${logoSize}" clip-path="url(#logo-clip)"/>`;
-        } else if (selectedLogo !== "custom") {
-          const presetSvg = getPresetLogoSVG(selectedLogo as any);
-          logoData = `<image href="${presetSvg}" x="${logoPos}" y="${logoPos}" width="${logoSize}" height="${logoSize}" clip-path="url(#logo-clip)"/>`;
+      (err, svgString) => {
+        if (err) {
+          showToast("Failed to generate SVG", "error");
+          return;
         }
 
-        if (logoData) {
-          const clipAndBackground = `
-            <defs>
-              <clipPath id="logo-clip">
-                <circle cx="${qrSize/2}" cy="${qrSize/2}" r="${logoSize/2}"/>
-              </clipPath>
-            </defs>
-            <circle cx="${qrSize/2}" cy="${qrSize/2}" r="${logoSize/2 + 5}" fill="${bgColor}" stroke="${fgColor}" stroke-width="2"/>
-            ${logoData}
-          `;
-          finalSvg = svgString.replace("</svg>", `${clipAndBackground}</svg>`);
-        }
-      }
+        let finalSvg = svgString;
 
-      const blob = new Blob([finalSvg], { type: "image/svg+xml;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.download = `qrglow_${activeTab}_qr.svg`;
-      link.href = url;
-      link.click();
-      URL.revokeObjectURL(url);
-      showToast("SVG Downloaded!");
-    });
+        if (selectedLogo !== "none") {
+          let logoData = "";
+          const logoSize = qrSize * 0.22;
+          const logoPos = (qrSize - logoSize) / 2;
+
+          if (selectedLogo === "custom" && customLogoUrl) {
+            logoData = `<image href="${customLogoUrl}" x="${logoPos}" y="${logoPos}" width="${logoSize}" height="${logoSize}" clip-path="url(#logo-clip)"/>`;
+          } else if (selectedLogo !== "custom") {
+            const presetSvg = getPresetLogoSVG(selectedLogo as any);
+            logoData = `<image href="${presetSvg}" x="${logoPos}" y="${logoPos}" width="${logoSize}" height="${logoSize}" clip-path="url(#logo-clip)"/>`;
+          }
+
+          if (logoData) {
+            const clipAndBackground = `
+              <defs>
+                <clipPath id="logo-clip">
+                  <circle cx="${qrSize / 2}" cy="${qrSize / 2}" r="${logoSize / 2}"/>
+                </clipPath>
+              </defs>
+              <circle cx="${qrSize / 2}" cy="${qrSize / 2}" r="${logoSize / 2 + 5}" fill="${bgColor}" stroke="${fgColor}" stroke-width="2"/>
+              ${logoData}
+            `;
+            finalSvg = svgString.replace("</svg>", `${clipAndBackground}</svg>`);
+          }
+        }
+
+        const blob = new Blob([finalSvg], { type: "image/svg+xml;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.download = `qrglow_${activeTab}_qr.svg`;
+        link.href = url;
+        link.click();
+        URL.revokeObjectURL(url);
+        showToast("SVG Downloaded!");
+      }
+    );
   };
 
-  // Copy QR Canvas to Clipboard as Image
   const copyToClipboard = async () => {
     if (!canvasRef.current) return;
     try {
       canvasRef.current.toBlob(async (blob) => {
         if (blob) {
-          await navigator.clipboard.write([
-            new ClipboardItem({ "image/png": blob })
-          ]);
+          await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
           showToast(t("toast.copied"));
         } else {
           showToast(t("toast.copyFailed"), "error");
@@ -440,7 +427,6 @@ export default function Home() {
     }
   };
 
-  // Print QR Code
   const printQrCode = () => {
     if (!canvasRef.current) return;
     const dataUrl = canvasRef.current.toDataURL("image/png");
@@ -482,7 +468,7 @@ export default function Home() {
   return (
     <div className="relative z-10 min-h-screen flex flex-col font-sans">
       {toastMessage && (
-        <div className="fixed top-14 left-1/2 z-50 -translate-x-1/2 flex items-center gap-1.5 rounded-full glass px-3 py-1.5 text-[11px] font-medium text-foreground">
+        <div className="fixed top-14 left-1/2 z-50 -translate-x-1/2 flex items-center gap-1.5 rounded-full glass px-4 py-2 text-sm font-medium text-foreground">
           <CheckIcon className="text-emerald-500" />
           {toastMessage}
         </div>
@@ -500,13 +486,13 @@ export default function Home() {
       {/* Main Content */}
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <div className="text-center mb-6 sm:mb-8">
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-medium glass-inset text-muted-foreground mb-3">
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium glass-inset text-muted-foreground mb-3">
             {t("hero.badge")}
           </span>
-          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground mb-2">
+          <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-foreground mb-3">
             {t("hero.title")}
           </h1>
-          <p className="text-[11px] sm:text-xs leading-relaxed text-muted-foreground max-w-md mx-auto">
+          <p className="text-sm sm:text-base leading-relaxed text-muted-foreground max-w-2xl mx-auto">
             {t("hero.subtitle")}
           </p>
         </div>
@@ -524,7 +510,7 @@ export default function Home() {
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id)}
                       className={cn(
-                        "flex flex-1 min-w-0 items-center justify-center gap-1 rounded-lg px-2 py-1.5 text-[10px] sm:text-[11px] font-medium whitespace-nowrap cursor-pointer transition-colors",
+                        "flex flex-1 min-w-0 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs sm:text-sm font-medium whitespace-nowrap cursor-pointer transition-colors",
                         isActive
                           ? "bg-white/90 dark:bg-white/12 text-foreground shadow-sm"
                           : "text-muted-foreground"
@@ -541,7 +527,7 @@ export default function Home() {
               <div className="space-y-4">
                 {activeTab === "link" && (
                   <div className="space-y-2">
-                    <Label className="text-[11px] font-medium text-muted-foreground">
+                    <Label className="text-sm font-medium text-muted-foreground">
                       {t("label.link")}
                     </Label>
                     <Input
@@ -549,14 +535,14 @@ export default function Home() {
                       value={linkUrl}
                       onChange={(e) => setLinkUrl(e.target.value)}
                       placeholder={t("placeholder.link")}
-                      className="w-full h-8 rounded-xl text-xs glass-inset border-0"
+                      className="w-full h-10 rounded-xl text-sm glass-inset border-0"
                     />
                   </div>
                 )}
 
                 {activeTab === "text" && (
                   <div className="space-y-2">
-                    <Label className="text-[11px] font-medium text-muted-foreground">
+                    <Label className="text-sm font-medium text-muted-foreground">
                       {t("label.text")}
                     </Label>
                     <textarea
@@ -564,7 +550,7 @@ export default function Home() {
                       value={textContent}
                       onChange={(e) => setTextContent(e.target.value)}
                       placeholder={t("placeholder.text")}
-                      className="w-full rounded-xl glass-inset p-2.5 text-xs text-foreground outline-none resize-none focus-visible:ring-2 focus-visible:ring-ring/20"
+                      className="w-full rounded-xl glass-inset p-3 text-sm text-foreground outline-none resize-none focus-visible:ring-2 focus-visible:ring-ring/20"
                     />
                   </div>
                 )}
@@ -573,7 +559,7 @@ export default function Home() {
                   <div className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label className="text-[11px] font-medium text-muted-foreground">
+                        <Label className="text-sm font-medium text-muted-foreground">
                           {t("label.wifi.ssid")}
                         </Label>
                         <Input
@@ -581,11 +567,11 @@ export default function Home() {
                           value={wifiSsid}
                           onChange={(e) => setWifiSsid(e.target.value)}
                           placeholder={t("placeholder.wifi.ssid")}
-                          className="w-full h-8 rounded-xl text-xs glass-inset border-0"
+                          className="w-full h-10 rounded-xl text-sm glass-inset border-0"
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label className="text-[11px] font-medium text-muted-foreground">
+                        <Label className="text-sm font-medium text-muted-foreground">
                           {t("label.wifi.password")}
                         </Label>
                         <Input
@@ -593,20 +579,20 @@ export default function Home() {
                           value={wifiPassword}
                           onChange={(e) => setWifiPassword(e.target.value)}
                           placeholder={t("placeholder.wifi.password")}
-                          className="w-full h-8 rounded-xl text-xs glass-inset border-0"
+                          className="w-full h-10 rounded-xl text-sm glass-inset border-0"
                         />
                       </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
                       <div className="space-y-2">
-                        <Label className="text-[11px] font-medium text-muted-foreground">
+                        <Label className="text-sm font-medium text-muted-foreground">
                           {t("label.wifi.security")}
                         </Label>
                         <select
                           value={wifiSecurity}
                           onChange={(e) => setWifiSecurity(e.target.value)}
-                          className="w-full h-8 rounded-xl glass-inset px-2.5 text-xs text-foreground outline-none cursor-pointer focus-visible:ring-2 focus-visible:ring-ring/20"
+                          className="w-full h-10 rounded-xl glass-inset px-3 text-sm text-foreground outline-none cursor-pointer focus-visible:ring-2 focus-visible:ring-ring/20"
                         >
                           <option value="WPA">WPA/WPA2</option>
                           <option value="WEP">WEP</option>
@@ -622,7 +608,10 @@ export default function Home() {
                           onChange={(e) => setWifiHidden(e.target.checked)}
                           className="h-4 w-4 rounded border-input text-primary cursor-pointer"
                         />
-                        <Label htmlFor="wifiHidden" className="text-[11px] font-medium text-muted-foreground cursor-pointer select-none">
+                        <Label
+                          htmlFor="wifiHidden"
+                          className="text-sm font-medium text-muted-foreground cursor-pointer select-none"
+                        >
                           {t("label.wifi.hidden")}
                         </Label>
                       </div>
@@ -634,7 +623,7 @@ export default function Home() {
                   <div className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label className="text-[11px] font-medium text-muted-foreground">
+                        <Label className="text-sm font-medium text-muted-foreground">
                           {t("label.email.to")}
                         </Label>
                         <Input
@@ -642,11 +631,11 @@ export default function Home() {
                           value={emailTo}
                           onChange={(e) => setEmailTo(e.target.value)}
                           placeholder={t("placeholder.email.to")}
-                          className="w-full h-8 rounded-xl text-xs glass-inset border-0"
+                          className="w-full h-10 rounded-xl text-sm glass-inset border-0"
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label className="text-[11px] font-medium text-muted-foreground">
+                        <Label className="text-sm font-medium text-muted-foreground">
                           {t("label.email.subject")}
                         </Label>
                         <Input
@@ -654,13 +643,13 @@ export default function Home() {
                           value={emailSubject}
                           onChange={(e) => setEmailSubject(e.target.value)}
                           placeholder={t("placeholder.email.subject")}
-                          className="w-full h-8 rounded-xl text-xs glass-inset border-0"
+                          className="w-full h-10 rounded-xl text-sm glass-inset border-0"
                         />
                       </div>
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="text-[11px] font-medium text-muted-foreground">
+                      <Label className="text-sm font-medium text-muted-foreground">
                         {t("label.email.body")}
                       </Label>
                       <textarea
@@ -668,7 +657,7 @@ export default function Home() {
                         value={emailBody}
                         onChange={(e) => setEmailBody(e.target.value)}
                         placeholder={t("placeholder.email.body")}
-                        className="w-full rounded-xl glass-inset p-2.5 text-xs text-foreground outline-none resize-none focus-visible:ring-2 focus-visible:ring-ring/20"
+                        className="w-full rounded-xl glass-inset p-3 text-sm text-foreground outline-none resize-none focus-visible:ring-2 focus-visible:ring-ring/20"
                       />
                     </div>
                   </div>
@@ -676,17 +665,18 @@ export default function Home() {
               </div>
             </div>
 
+            {/* Customize Panel */}
             <div className="rounded-2xl glass p-4 sm:p-5">
-              <h2 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-4">
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-4">
                 {t("section.customize")}
               </h2>
 
               <div className="space-y-4">
                 {/* Foreground Color Picker */}
                 <div className="space-y-2">
-                  <Label className="text-[11px] font-medium text-muted-foreground flex justify-between">
+                  <Label className="text-sm font-medium text-muted-foreground flex justify-between">
                     <span>{t("label.fgColor")}</span>
-                    <span className="font-mono text-[10px] text-muted-foreground/70">{fgColor}</span>
+                    <span className="font-mono text-xs text-muted-foreground/70">{fgColor}</span>
                   </Label>
                   <div className="flex flex-wrap items-center gap-2">
                     <input
@@ -701,7 +691,9 @@ export default function Home() {
                         onClick={() => setFgColor(preset)}
                         style={{ backgroundColor: preset }}
                         className={`size-6 rounded-full cursor-pointer ${
-                          fgColor === preset ? "ring-2 ring-foreground/40 ring-offset-1 ring-offset-transparent" : ""
+                          fgColor === preset
+                            ? "ring-2 ring-foreground/40 ring-offset-1 ring-offset-transparent"
+                            : ""
                         }`}
                         title={preset}
                       />
@@ -711,9 +703,9 @@ export default function Home() {
 
                 {/* Background Color Picker */}
                 <div className="space-y-2">
-                  <Label className="text-[11px] font-medium text-muted-foreground flex justify-between">
+                  <Label className="text-sm font-medium text-muted-foreground flex justify-between">
                     <span>{t("label.bgColor")}</span>
-                    <span className="font-mono text-[10px] text-muted-foreground/70">{bgColor}</span>
+                    <span className="font-mono text-xs text-muted-foreground/70">{bgColor}</span>
                   </Label>
                   <div className="flex flex-wrap items-center gap-2">
                     <input
@@ -728,7 +720,9 @@ export default function Home() {
                         onClick={() => setBgColor(preset)}
                         style={{ backgroundColor: preset }}
                         className={`size-6 rounded-full cursor-pointer ${
-                          bgColor === preset ? "ring-2 ring-foreground/40 ring-offset-1 ring-offset-transparent" : ""
+                          bgColor === preset
+                            ? "ring-2 ring-foreground/40 ring-offset-1 ring-offset-transparent"
+                            : ""
                         }`}
                         title={preset}
                       />
@@ -738,9 +732,11 @@ export default function Home() {
 
                 {/* Size Slider */}
                 <div className="space-y-2">
-                  <div className="flex justify-between text-[11px] font-medium text-muted-foreground">
+                  <div className="flex justify-between text-sm font-medium text-muted-foreground">
                     <span>{t("label.size")}</span>
-                    <span>{qrSize} x {qrSize} px</span>
+                    <span>
+                      {qrSize} x {qrSize} px
+                    </span>
                   </div>
                   <input
                     type="range"
@@ -753,9 +749,28 @@ export default function Home() {
                   />
                 </div>
 
+                {/* Margin Slider — NEW */}
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm font-medium text-muted-foreground">
+                    <span>{t("label.margin")}</span>
+                    <span>
+                      {qrMargin} {qrMargin === 1 ? t("margin.module") : t("margin.modules")}
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="10"
+                    step="1"
+                    value={qrMargin}
+                    onChange={(e) => setQrMargin(Number(e.target.value))}
+                    className="w-full accent-primary cursor-pointer"
+                  />
+                </div>
+
                 {/* Logo Selector */}
                 <div className="space-y-2 border-t border-foreground/5 pt-4">
-                  <Label className="text-[11px] font-medium text-muted-foreground">
+                  <Label className="text-sm font-medium text-muted-foreground">
                     {t("label.logo")}
                   </Label>
                   <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5">
@@ -771,7 +786,7 @@ export default function Home() {
                         onClick={() => setSelectedLogo(logo.id as any)}
                         variant={selectedLogo === logo.id ? "default" : "outline"}
                         className={cn(
-                          "flex items-center justify-center h-7 rounded-lg text-[10px] font-medium cursor-pointer",
+                          "flex items-center justify-center h-9 rounded-lg text-xs font-medium cursor-pointer",
                           selectedLogo !== logo.id && "glass-inset border-0"
                         )}
                       >
@@ -784,7 +799,7 @@ export default function Home() {
                     <Button
                       onClick={() => fileInputRef.current?.click()}
                       variant="outline"
-                      className="w-full sm:w-auto flex items-center justify-center gap-1.5 h-7 px-3 rounded-xl glass-inset border-0 text-[11px] font-medium cursor-pointer"
+                      className="w-full sm:w-auto flex items-center justify-center gap-1.5 h-9 px-4 rounded-xl glass-inset border-0 text-sm font-medium cursor-pointer"
                     >
                       <UploadIcon />
                       {t("btn.uploadLogo")}
@@ -802,7 +817,7 @@ export default function Home() {
                           setSelectedLogo("none");
                           setCustomLogoUrl(null);
                         }}
-                        className="text-[10px] font-medium text-muted-foreground cursor-pointer"
+                        className="text-xs font-medium text-muted-foreground cursor-pointer"
                       >
                         {t("btn.removeLogo")}
                       </button>
@@ -813,24 +828,34 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Live Preview — first on mobile, sticky sidebar on desktop */}
+          {/* Live Preview — responsive canvas fix */}
           <div className="lg:col-span-5 order-1 lg:order-2 lg:sticky lg:top-16">
             <div className="rounded-2xl glass p-4 sm:p-5 text-center">
-              <h2 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-4">
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-4">
                 {t("section.preview")}
               </h2>
 
               <div className="flex justify-center items-center rounded-xl p-4 mb-4 min-h-[200px] sm:min-h-[240px] bg-[repeating-conic-gradient(#00000008_0%_25%,transparent_0%_50%)] bg-[length:12px_12px] dark:bg-[repeating-conic-gradient(#ffffff08_0%_25%,transparent_0%_50%)]">
+                {/*
+                  FIX: Canvas resolution stays at qrSize × qrSize for high-quality output.
+                  CSS scales it down responsively to fit its container on smaller screens.
+                  maxWidth: qrSize prevents it from stretching larger than its native size.
+                */}
                 <canvas
                   ref={canvasRef}
-                  className="max-w-full max-h-[260px] w-auto h-auto rounded-lg shadow-sm"
+                  style={{
+                    width: "100%",
+                    height: "auto",
+                    maxWidth: qrSize,
+                  }}
+                  className="rounded-lg shadow-sm"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-2">
                 <Button
                   onClick={downloadPng}
-                  className="flex items-center justify-center gap-1.5 h-8 rounded-xl text-[11px] font-medium cursor-pointer"
+                  className="flex items-center justify-center gap-1.5 h-10 rounded-xl text-sm font-medium cursor-pointer"
                 >
                   <DownloadIcon />
                   {t("btn.downloadPng")}
@@ -838,7 +863,7 @@ export default function Home() {
                 <Button
                   onClick={downloadSvg}
                   variant="outline"
-                  className="flex items-center justify-center gap-1.5 h-8 rounded-xl glass-inset border-0 text-[11px] font-medium cursor-pointer"
+                  className="flex items-center justify-center gap-1.5 h-10 rounded-xl glass-inset border-0 text-sm font-medium cursor-pointer"
                 >
                   <DownloadIcon />
                   {t("btn.downloadSvg")}
@@ -846,7 +871,7 @@ export default function Home() {
                 <Button
                   onClick={copyToClipboard}
                   variant="outline"
-                  className="flex items-center justify-center gap-1.5 h-8 rounded-xl glass-inset border-0 text-[11px] font-medium cursor-pointer"
+                  className="flex items-center justify-center gap-1.5 h-10 rounded-xl glass-inset border-0 text-sm font-medium cursor-pointer"
                 >
                   <CopyIcon />
                   {t("btn.copy")}
@@ -854,7 +879,7 @@ export default function Home() {
                 <Button
                   onClick={printQrCode}
                   variant="outline"
-                  className="flex items-center justify-center gap-1.5 h-8 rounded-xl glass-inset border-0 text-[11px] font-medium cursor-pointer"
+                  className="flex items-center justify-center gap-1.5 h-10 rounded-xl glass-inset border-0 text-sm font-medium cursor-pointer"
                 >
                   <PrintIcon />
                   {t("btn.print")}
